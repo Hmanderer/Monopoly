@@ -1,0 +1,33 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build output
+[Bb]in/
+[Oo]bj/
+x64/
+x86/
+Debug/
+Release/
+*.exe
+*.dll
+!Monopoly/SDL3.dll
+!Monopoly/SDL3_ttf.dll
+*.pdb
+*.ilk
+*.iobj
+*.ipdb
+*.obj
+*.tlog
+*.log
+*.recipe
+*.lastbuildstate
+*.FileListAbsolute.txt
+
+# Runtime save data
+monopoly_save.txt
+
+# OS/editor files
+.DS_Store
+Thumbs.db

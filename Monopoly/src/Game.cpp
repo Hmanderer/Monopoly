@@ -865,6 +865,62 @@ void Game::handle_event(const SDL_Event* event, SDL_Renderer* renderer)
         else if (state != GameState::GameOver && event->key.key == SDLK_F9) {
             load_game("monopoly_save.txt");
         }
+        else if (state == GameState::BankruptcyMenu) {
+            Player* bankruptcy_player = turn_manager.get_current_player();
+            if (bankruptcy_player && bankruptcy_player->has_pending_debt()) {
+                const int visible = 9;
+                const int property_count = static_cast<int>(bankruptcy_player->get_properties().size());
+                // SDL3: use scancode for physical arrow keys. This is independent
+                // of keyboard layout and is more reliable than comparing keycodes.
+                if (event->key.scancode == SDL_SCANCODE_UP) {
+                    if (bankruptcy_scroll > 0) --bankruptcy_scroll;
+                }
+                else if (event->key.scancode == SDL_SCANCODE_DOWN) {
+                    if (bankruptcy_scroll + visible < property_count) ++bankruptcy_scroll;
+                }
+            }
+        }
+        else if (state == GameState::ManagingHouses) {
+            if (event->key.scancode == SDL_SCANCODE_UP) {
+                if (build_scroll > 0) --build_scroll;
+            }
+            else if (event->key.scancode == SDL_SCANCODE_DOWN) {
+                Player* p = turn_manager.get_current_player();
+                if (p && build_scroll + 10 < static_cast<int>(p->get_properties().size())) ++build_scroll;
+            }
+            else if (event->key.scancode == SDL_SCANCODE_ESCAPE) {
+                state = GameState::PlayingField;
+            }
+        }
+        else if (state == GameState::ExchangeMenu) {
+            if (event->key.scancode == SDL_SCANCODE_UP) {
+                if (exchange_keyboard_right) {
+                    if (exchange_receive_scroll > 0) --exchange_receive_scroll;
+                } else if (exchange_give_scroll > 0) {
+                    --exchange_give_scroll;
+                }
+            }
+            else if (event->key.scancode == SDL_SCANCODE_DOWN) {
+                Player* p = turn_manager.get_current_player();
+                if (p) {
+                    if (exchange_keyboard_right) {
+                        if (exchange_target && exchange_receive_scroll + 7 < static_cast<int>(exchange_target->get_properties().size())) ++exchange_receive_scroll;
+                    } else if (exchange_give_scroll + 7 < static_cast<int>(p->get_properties().size())) {
+                        ++exchange_give_scroll;
+                    }
+                }
+            }
+            else if (event->key.scancode == SDL_SCANCODE_LEFT) {
+                exchange_keyboard_right = false;
+            }
+            else if (event->key.scancode == SDL_SCANCODE_RIGHT) {
+                exchange_keyboard_right = true;
+            }
+            else if (event->key.scancode == SDL_SCANCODE_ESCAPE) {
+                reset_exchange();
+                state = GameState::PlayingField;
+            }
+        }
     }
     else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN && event->button.button == SDL_BUTTON_LEFT) {
         float mouse_x = event->button.x;
@@ -990,10 +1046,10 @@ void Game::handle_event(const SDL_Event* event, SDL_Renderer* renderer)
                 const auto& props = current->get_properties();
                 Board* board = turn_manager.get_board();
 
-                if (is_point_in_rect(mouse_x, mouse_y, btn_bankruptcy_up)) {
+                if (is_point_in_rect(mouse_x, mouse_y, SDL_FRect{920.0f, 185.0f, 90.0f, 55.0f})) {
                     if (bankruptcy_scroll > 0) --bankruptcy_scroll;
                 }
-                else if (is_point_in_rect(mouse_x, mouse_y, btn_bankruptcy_down)) {
+                else if (is_point_in_rect(mouse_x, mouse_y, SDL_FRect{920.0f, 605.0f, 90.0f, 55.0f})) {
                     if (bankruptcy_scroll + visible < static_cast<int>(props.size())) ++bankruptcy_scroll;
                 }
                 else if (is_point_in_rect(mouse_x, mouse_y, btn_bankruptcy_pay)) {
@@ -1083,6 +1139,7 @@ void Game::handle_event(const SDL_Event* event, SDL_Renderer* renderer)
                     SDL_FRect r{ target_x, 100.0f, 190.0f, 42.0f };
                     if (is_point_in_rect(mouse_x, mouse_y, r)) {
                         exchange_target = p;
+                        exchange_keyboard_right = true;
                         exchange_receive = nullptr;
                         exchange_receive_scroll = 0;
                     }
@@ -1109,6 +1166,7 @@ void Game::handle_event(const SDL_Event* event, SDL_Renderer* renderer)
                         if (idx >= mine_count) break;
                         SDL_FRect r{120, list_y + row * row_h, 470, 40};
                         if (is_point_in_rect(mouse_x, mouse_y, r)) {
+                            exchange_keyboard_right = false;
                             exchange_give = mine[static_cast<size_t>(idx)];
                             break;
                         }
@@ -1120,6 +1178,7 @@ void Game::handle_event(const SDL_Event* event, SDL_Renderer* renderer)
                             if (idx >= static_cast<int>(theirs.size())) break;
                             SDL_FRect r{650, list_y + row * row_h, 470, 40};
                             if (is_point_in_rect(mouse_x, mouse_y, r)) {
+                                exchange_keyboard_right = true;
                                 exchange_receive = theirs[static_cast<size_t>(idx)];
                                 break;
                             }
@@ -1309,10 +1368,10 @@ void Game::handle_event(const SDL_Event* event, SDL_Renderer* renderer)
 
                 if (current && board) {
                     const auto& props = current->get_properties();
-                    if (is_point_in_rect(mouse_x, mouse_y, SDL_FRect{modal.x + 850, modal.y + 95, 45, 35})) {
+                    if (is_point_in_rect(mouse_x, mouse_y, SDL_FRect{modal.x + 840, modal.y + 85, 65, 55})) {
                         if (build_scroll > 0) --build_scroll;
                     }
-                    else if (is_point_in_rect(mouse_x, mouse_y, SDL_FRect{modal.x + 850, modal.y + 615, 45, 35})) {
+                    else if (is_point_in_rect(mouse_x, mouse_y, SDL_FRect{modal.x + 840, modal.y + 605, 65, 55})) {
                         if (build_scroll + visible < static_cast<int>(props.size())) ++build_scroll;
                     }
                     else {
@@ -1408,6 +1467,7 @@ void Game::setup(int player_count, const std::vector<std::string>& names)
     build_scroll = 0;
     exchange_give_scroll = 0;
     exchange_receive_scroll = 0;
+    exchange_keyboard_right = false;
 
     // Fully initialize the first-roll state. Merely setting GameState::FirstRoll
     // is not enough because the candidate list and round counters must exist
@@ -1419,8 +1479,14 @@ void Game::open_bankruptcy_menu()
 {
     Player* current = turn_manager.get_current_player();
     if (!current || !current->has_pending_debt() || current->get_is_bankrupt()) return;
-    bankruptcy_scroll = 0;
-    state = GameState::BankruptcyMenu;
+
+    // update() is called every frame while the debt is pending. Do not
+    // reset the scroll position if the bankruptcy menu is already open,
+    // otherwise the Up/Down buttons appear to do nothing.
+    if (state != GameState::BankruptcyMenu) {
+        bankruptcy_scroll = 0;
+        state = GameState::BankruptcyMenu;
+    }
 }
 
 void Game::finish_pending_payment()

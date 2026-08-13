@@ -137,14 +137,15 @@ private:
     SDL_FRect btn_game_over_quit{ 670.0f, 510.0f, 220.0f, 55.0f };
     // Меню ручной ликвидации при нехватке денег.
     SDL_FRect modal_bankruptcy_rect{ 160.0f, 80.0f, 960.0f, 650.0f };
-    SDL_FRect btn_bankruptcy_up{ 930.0f, 195.0f, 70.0f, 38.0f };
-    SDL_FRect btn_bankruptcy_down{ 930.0f, 615.0f, 70.0f, 38.0f };
+    SDL_FRect btn_bankruptcy_up{ 920.0f, 185.0f, 90.0f, 55.0f };
+    SDL_FRect btn_bankruptcy_down{ 920.0f, 605.0f, 90.0f, 55.0f };
     SDL_FRect btn_bankruptcy_pay{ 680.0f, 665.0f, 180.0f, 45.0f };
     SDL_FRect btn_bankruptcy_declare{ 875.0f, 665.0f, 210.0f, 45.0f };
     int bankruptcy_scroll = 0;
     int build_scroll = 0;
     int exchange_give_scroll = 0;
     int exchange_receive_scroll = 0;
+    bool exchange_keyboard_right = false;
 
     struct MoneyNotification
     {
